@@ -1,0 +1,76 @@
+\documentclass{article}
+\usepackage{Sweave}
+\begin{document}
+<<echo=FALSE>>=
+source("dplfit.R")
+pp1 = function (x) { return(sprintf("%0.1f",x)) }
+pp2 = function (x) { return(sprintf("%0.2f",x)) }
+
+# Earthquakes
+mags <- read.delim("data/earthcat/mags.all",header=FALSE)$V1
+mags = mags[mags > 0]
+mags = 10^mags
+if(length(mags) < 1) {
+  warning("Earthquake mags.all missing. Please run earthcat/make_earthcat.sh") }
+
+# Bronchia
+yehD6 <- read.delim("data/yeh1976tracheobronchial.D6.tsv", header=FALSE)
+names(yehD6) <- c("diam")
+yehD6$record = seq(1,1097)
+yehD6 = yehD6[with(yehD6, c(yehD6[diam >= 20,"record"],
+  rep(yehD6[diam < 20,"record"], 10))),]
+yehD6 = yehD6[!is.na(yehD6$diam),]
+
+yehlam = 2
+yehxmin = 16
+
+# Vessels
+mouse <- read.delim("data/mouse-vasculature-tekin2016.tsv")
+
+cdf_lm_fit_res = function(xs,xm) {
+  ecd = ecdf(xs[xs >= xm & !is.na(xs)])
+  xs = environment(ecd)$x
+  ys = environment(ecd)$y
+  res = summary(lm(log(1-ys[1:(length(ys)-1)])
+    ~ log(xs[1:(length(xs)-1)])))
+  return(res) }
+cdf_lm_fit = function(xs,xm) {
+  return(-cdf_lm_fit_res(xs,xm)$coefficients[2]) }
+cdf_lm_fit_se = function(xs,xm) {
+  res = cdf_lm_fit_res(xs,xm)
+  return(data.frame(alpha=-res$coefficients[2], se=res$coefficients[2,2])) }
+@
+
+\begin{tabular}{l c c c c c c c}
+Data &
+$x_m$ &
+$\lambda$&
+Cont. $\hat\alpha_c$ &
+Disc. $\hat\alpha_d$ &
+Regr. slope &
+Theor. $\alpha$\\
+\hline
+Earthq. &
+2.0 &
+$10^{0.1}$ &
+*\Sexpr{pp2(paretofit(mags,10^2))}$\pm$\Sexpr{pp2(1.96*paretofit_se(mags,10^2)$se)} &
+\Sexpr{pp2(dplfit_(mags,10^0.1,10^2))}$\pm$\Sexpr{pp2(1.96*dplfit_se_(mags,10^0.1,10^2)$se)} &
+\Sexpr{pp2(cdf_lm_fit(mags,10^2))}$\pm$\Sexpr{pp2(1.96*cdf_lm_fit_se(mags, 10^2)$se)} &
+---\\
+Bronch. &
+1.6mm &
+$2$ &
+*\Sexpr{pp1(paretofit(yehD6$diam,yehxmin))}$\pm$\Sexpr{pp1(1.96*paretofit_se(yehD6$diam,yehxmin)$se)} &
+\Sexpr{pp1(dplfit_bin(yehD6$diam,yehlam,yehxmin))}$\pm$\Sexpr{pp1(1.96*dplfit_bin_se(yehD6$diam,yehlam,yehxmin)$se)} &
+\Sexpr{pp2(cdf_lm_fit(yehD6$diam,yehxmin))}$\pm$\Sexpr{pp2(1.96*cdf_lm_fit_se(yehD6$diam,yehxmin)$se)} &
+$\alpha$$=$3\\
+Vessels &
+0.7mm &
+$2$ &
+\Sexpr{pp1(paretofit(mouse$rad,0.7))}$\pm$\Sexpr{pp1(1.96*paretofit_se(mouse$rad,0.7)$se)} &
+\Sexpr{pp1(dplfit_bin(mouse$rad,2,0.7))}$\pm$\Sexpr{pp1(1.96*dplfit_bin_se(mouse$rad,2,0.7)$se)} &
+*\Sexpr{pp2(cdf_lm_fit(mouse$rad,0.7))}$\pm$\Sexpr{pp2(1.96*cdf_lm_fit_se(mouse$rad,0.7)$se)} &
+2$\le$$\alpha$$\le$3\\
+\hline
+\end{tabular}
+\end{document}
