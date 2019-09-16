@@ -48,8 +48,8 @@ ddpl = function(x, a=2, l=sqrt(2), xm=1) {
   return(ifelse(
     abs((log(x/xm)/log(l)) - round(log(x/xm)/log(l))) > 5e-15,
     0, ((1 - l^(-a))*(xm/x)^a))) }
-pdpl = function(x, a=2, l=sqrt(2), xm=1) 
-  (1 - l^(-a*(floor(log(x/xm)/log(l)) + 1)))
+pdpl = function(x, a=2, l=sqrt(2), xm=1) {
+  (1 - l^(-a*(floor(log(x/xm)/log(l)) + 1))) }
 qdpl = function (u, a=2, l=sqrt(2), xm=1) {
   lma = l^(-a)
   return(xm * l^floor(log(1 - u/xm^a)/(-a*log(l)))) } 
